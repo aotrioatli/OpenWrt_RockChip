@@ -11,6 +11,7 @@ if [ -f "feeds/packages/lang/rust/Makefile" ]; then
     sed -i '/define Host\/Compile/,/endef/{
         /PYTHON.*x\.py build/i\
 	echo "[llvm]" > $(HOST_BUILD_DIR)/config.toml; \\\
-	echo "download-ci-llvm = false" >> $(HOST_BUILD_DIR)/config.toml; \\
+	echo "download-ci-llvm = false" >> $(HOST_BUILD_DIR)/config.toml; \\\
+
     }' feeds/packages/lang/rust/Makefile
 fi
