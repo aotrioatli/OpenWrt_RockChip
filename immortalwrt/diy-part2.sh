@@ -5,13 +5,14 @@ sed -i 's/192.168.1.1/192.168.11.1/g' package/base-files/files/bin/config_genera
 sed -i "s/ImmortalWrt/OpenWrt/g" package/base-files/files/bin/config_generate
 
 # Fix Rust build: disable LLVM CI download to avoid 404 errors
-# Patch the rust Makefile to create config.toml with download-ci-llvm = false
+# This prevents 404 errors when Rust tries to download pre-built LLVM from CI servers
 if [ -f "feeds/packages/lang/rust/Makefile" ]; then
-    # Find the Host/Compile section and add config.toml creation before the build
-    sed -i '/define Host\/Compile/,/endef/{
-        /PYTHON.*x\.py build/i\
-	echo "[llvm]" > $(HOST_BUILD_DIR)/config.toml; \\\
-	echo "download-ci-llvm = false" >> $(HOST_BUILD_DIR)/config.toml; \\\
-
-    }' feeds/packages/lang/rust/Makefile
+    echo "Patching Rust Makefile to disable LLVM CI downloads..."
+    
+    # Add --set llvm.download-ci-llvm=false to the x.py dist command
+    # This tells Rust to build LLVM locally instead of downloading pre-built binaries
+    sed -i 's/\($(PYTHON) \.\/x\.py dist\)/\1 --set llvm.download-ci-llvm=false --set rust.download-ci-llvm=false/' \
+        feeds/packages/lang/rust/Makefile
+    
+    echo "Rust Makefile patched successfully"
 fi
