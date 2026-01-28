@@ -79,15 +79,6 @@ jobs:
       with:
           fetch-depth: 1
 
-    - name: Cache apt packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          /var/cache/apt/archives
-        key: apt-cache-${{ runner.os }}-${{ hashFiles('.github/workflows/immortalwrt_rockchip-docker.yml') }}
-        restore-keys: |
-          apt-cache-${{ runner.os }}-
-
     - name: Initialize the compilation environment
       env:
         DEBIAN_FRONTEND: noninteractive
@@ -127,12 +118,6 @@ jobs:
           ccache-docker-${{ env.REPO_BRANCH }}-${{ github.event.inputs.device }}-
           ccache-docker-${{ env.REPO_BRANCH }}-
 
-    - name: Configure ccache
-      run: |
-        echo "CONFIG_CCACHE=y" >> openwrt/.config
-        ccache -M 5G
-        ccache -s
-
     - name: Update & install feeds
       working-directory: ./openwrt
       run: |
@@ -150,6 +135,13 @@ jobs:
         [ -e "$CONFIG_FILE" ] && cat "$CONFIG_FILE" > openwrt/.config
         chmod +x $OPENWRT_NAME/*.sh && cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
+
+    - name: Configure ccache
+      run: |
+        cd openwrt
+        echo "CONFIG_CCACHE=y" >> .config
+        ccache -M 5G
+        ccache -s
 
     - name: Configure target device
       run: |
@@ -183,6 +175,14 @@ jobs:
           echo "Device configuration applied"
         fi
 
+    - name: Cache OpenWrt dl directory
+      uses: actions/cache@v4
+      with:
+        path: openwrt/dl
+        key: dl-cache-docker-${{ env.REPO_BRANCH }}-${{ github.run_number }}
+        restore-keys: |
+          dl-cache-docker-${{ env.REPO_BRANCH }}-
+
     - name: Download the installation package
       id: package
       run: |
@@ -202,14 +202,6 @@ jobs:
         make download -j$(nproc)
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-
-    - name: Cache OpenWrt dl directory
-      uses: actions/cache@v4
-      with:
-        path: openwrt/dl
-        key: dl-cache-docker-${{ env.REPO_BRANCH }}-${{ hashFiles('openwrt/.config') }}
-        restore-keys: |
-          dl-cache-docker-${{ env.REPO_BRANCH }}-
 
     - name: Restore kernel cache
       if: github.event.inputs.use_kernel_cache == 'true'
