@@ -5,11 +5,156 @@ on:
   #   - cron: 0 16 * * *
   workflow_dispatch:
     inputs:
-      target_devices:
-        description: 'Target devices (comma-separated or "all"). Available: armsom_sige3, armsom_sige7, embedfire_doornet1, embedfire_doornet2, embedfire_lubancat-1, embedfire_lubancat-1n, embedfire_lubancat-2, embedfire_lubancat-2n, embedfire_lubancat-4, embedfire_lubancat-5, friendlyarm_nanopc-t4, friendlyarm_nanopc-t6, friendlyarm_nanopi-r2c, friendlyarm_nanopi-r2s, friendlyarm_nanopi-r3s, friendlyarm_nanopi-r4s, friendlyarm_nanopi-r4se, friendlyarm_nanopi-r5c, friendlyarm_nanopi-r5s, friendlyarm_nanopi-r6c, friendlyarm_nanopi-r6s, hinlink_h88k, hinlink_opc-h66k, hinlink_opc-h68k, hinlink_opc-h69k, radxa_rock-5a, radxa_rock-5b, xunlong_orangepi-5, xunlong_orangepi-5-plus'
-        required: true
-        type: string
-        default: 'all'
+      build_all:
+        description: 'Build all devices'
+        required: false
+        type: boolean
+        default: true
+      armsom_sige3:
+        description: 'ArmSoM Sige3'
+        required: false
+        type: boolean
+        default: false
+      armsom_sige7:
+        description: 'ArmSoM Sige7'
+        required: false
+        type: boolean
+        default: false
+      embedfire_doornet1:
+        description: 'Embedfire DoorNet1'
+        required: false
+        type: boolean
+        default: false
+      embedfire_doornet2:
+        description: 'Embedfire DoorNet2'
+        required: false
+        type: boolean
+        default: false
+      embedfire_lubancat_1:
+        description: 'Embedfire LubanCat-1'
+        required: false
+        type: boolean
+        default: false
+      embedfire_lubancat_1n:
+        description: 'Embedfire LubanCat-1N'
+        required: false
+        type: boolean
+        default: false
+      embedfire_lubancat_2:
+        description: 'Embedfire LubanCat-2'
+        required: false
+        type: boolean
+        default: false
+      embedfire_lubancat_2n:
+        description: 'Embedfire LubanCat-2N'
+        required: false
+        type: boolean
+        default: false
+      embedfire_lubancat_4:
+        description: 'Embedfire LubanCat-4'
+        required: false
+        type: boolean
+        default: false
+      embedfire_lubancat_5:
+        description: 'Embedfire LubanCat-5'
+        required: false
+        type: boolean
+        default: false
+      friendlyarm_nanopc_t4:
+        description: 'FriendlyARM NanoPC-T4'
+        required: false
+        type: boolean
+        default: false
+      friendlyarm_nanopc_t6:
+        description: 'FriendlyARM NanoPC-T6'
+        required: false
+        type: boolean
+        default: false
+      friendlyarm_nanopi_r2c:
+        description: 'FriendlyARM NanoPi-R2C'
+        required: false
+        type: boolean
+        default: false
+      friendlyarm_nanopi_r2s:
+        description: 'FriendlyARM NanoPi-R2S'
+        required: false
+        type: boolean
+        default: false
+      friendlyarm_nanopi_r3s:
+        description: 'FriendlyARM NanoPi-R3S'
+        required: false
+        type: boolean
+        default: false
+      friendlyarm_nanopi_r4s:
+        description: 'FriendlyARM NanoPi-R4S'
+        required: false
+        type: boolean
+        default: false
+      friendlyarm_nanopi_r4se:
+        description: 'FriendlyARM NanoPi-R4SE'
+        required: false
+        type: boolean
+        default: false
+      friendlyarm_nanopi_r5c:
+        description: 'FriendlyARM NanoPi-R5C'
+        required: false
+        type: boolean
+        default: false
+      friendlyarm_nanopi_r5s:
+        description: 'FriendlyARM NanoPi-R5S'
+        required: false
+        type: boolean
+        default: false
+      friendlyarm_nanopi_r6c:
+        description: 'FriendlyARM NanoPi-R6C'
+        required: false
+        type: boolean
+        default: false
+      friendlyarm_nanopi_r6s:
+        description: 'FriendlyARM NanoPi-R6S'
+        required: false
+        type: boolean
+        default: false
+      hinlink_h88k:
+        description: 'Hinlink H88K'
+        required: false
+        type: boolean
+        default: false
+      hinlink_opc_h66k:
+        description: 'Hinlink OPC-H66K'
+        required: false
+        type: boolean
+        default: false
+      hinlink_opc_h68k:
+        description: 'Hinlink OPC-H68K'
+        required: false
+        type: boolean
+        default: false
+      hinlink_opc_h69k:
+        description: 'Hinlink OPC-H69K'
+        required: false
+        type: boolean
+        default: false
+      radxa_rock_5a:
+        description: 'Radxa Rock-5A'
+        required: false
+        type: boolean
+        default: false
+      radxa_rock_5b:
+        description: 'Radxa Rock-5B'
+        required: false
+        type: boolean
+        default: false
+      xunlong_orangepi_5:
+        description: 'Xunlong OrangePi-5'
+        required: false
+        type: boolean
+        default: false
+      xunlong_orangepi_5_plus:
+        description: 'Xunlong OrangePi-5 Plus'
+        required: false
+        type: boolean
+        default: false
 
 env:
   REPO_URL: https://github.com/DHDAXCW/immortalwrt
@@ -105,7 +250,53 @@ jobs:
     - name: Configure target device
       run: |
         cd openwrt
-        DEVICES="${{ github.event.inputs.target_devices }}"
+        
+        # Build device list from checkbox inputs
+        DEVICES=""
+        
+        if [ "${{ github.event.inputs.build_all }}" = "true" ]; then
+          echo "Building all devices (MULTI_PROFILE)"
+          DEVICES="all"
+        else
+          # Collect selected devices
+          [ "${{ github.event.inputs.armsom_sige3 }}" = "true" ] && DEVICES="${DEVICES}armsom_sige3,"
+          [ "${{ github.event.inputs.armsom_sige7 }}" = "true" ] && DEVICES="${DEVICES}armsom_sige7,"
+          [ "${{ github.event.inputs.embedfire_doornet1 }}" = "true" ] && DEVICES="${DEVICES}embedfire_doornet1,"
+          [ "${{ github.event.inputs.embedfire_doornet2 }}" = "true" ] && DEVICES="${DEVICES}embedfire_doornet2,"
+          [ "${{ github.event.inputs.embedfire_lubancat_1 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-1,"
+          [ "${{ github.event.inputs.embedfire_lubancat_1n }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-1n,"
+          [ "${{ github.event.inputs.embedfire_lubancat_2 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-2,"
+          [ "${{ github.event.inputs.embedfire_lubancat_2n }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-2n,"
+          [ "${{ github.event.inputs.embedfire_lubancat_4 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-4,"
+          [ "${{ github.event.inputs.embedfire_lubancat_5 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-5,"
+          [ "${{ github.event.inputs.friendlyarm_nanopc_t4 }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopc-t4,"
+          [ "${{ github.event.inputs.friendlyarm_nanopc_t6 }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopc-t6,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r2c }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r2c,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r2s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r2s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r3s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r3s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r4s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r4s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r4se }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r4se,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r5c }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r5c,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r5s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r5s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r6c }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r6c,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r6s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r6s,"
+          [ "${{ github.event.inputs.hinlink_h88k }}" = "true" ] && DEVICES="${DEVICES}hinlink_h88k,"
+          [ "${{ github.event.inputs.hinlink_opc_h66k }}" = "true" ] && DEVICES="${DEVICES}hinlink_opc-h66k,"
+          [ "${{ github.event.inputs.hinlink_opc_h68k }}" = "true" ] && DEVICES="${DEVICES}hinlink_opc-h68k,"
+          [ "${{ github.event.inputs.hinlink_opc_h69k }}" = "true" ] && DEVICES="${DEVICES}hinlink_opc-h69k,"
+          [ "${{ github.event.inputs.radxa_rock_5a }}" = "true" ] && DEVICES="${DEVICES}radxa_rock-5a,"
+          [ "${{ github.event.inputs.radxa_rock_5b }}" = "true" ] && DEVICES="${DEVICES}radxa_rock-5b,"
+          [ "${{ github.event.inputs.xunlong_orangepi_5 }}" = "true" ] && DEVICES="${DEVICES}xunlong_orangepi-5,"
+          [ "${{ github.event.inputs.xunlong_orangepi_5_plus }}" = "true" ] && DEVICES="${DEVICES}xunlong_orangepi-5-plus,"
+          
+          # Remove trailing comma
+          DEVICES="${DEVICES%,}"
+          
+          if [ -z "$DEVICES" ]; then
+            echo "Error: No devices selected. Please select at least one device or enable 'Build all devices'."
+            exit 1
+          fi
+        fi
 
         if [ "$DEVICES" = "all" ]; then
           echo "Building all devices (MULTI_PROFILE)"
@@ -153,7 +344,48 @@ jobs:
       run: |
         echo "date1=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
         echo "date2=$(date "+%Y年%m月%d日")" >> $GITHUB_ENV
-        DEVICES="${{ github.event.inputs.target_devices }}"
+        
+        # Build device list from checkbox inputs
+        DEVICES=""
+        
+        if [ "${{ github.event.inputs.build_all }}" = "true" ]; then
+          DEVICES="all"
+        else
+          # Collect selected devices
+          [ "${{ github.event.inputs.armsom_sige3 }}" = "true" ] && DEVICES="${DEVICES}armsom_sige3,"
+          [ "${{ github.event.inputs.armsom_sige7 }}" = "true" ] && DEVICES="${DEVICES}armsom_sige7,"
+          [ "${{ github.event.inputs.embedfire_doornet1 }}" = "true" ] && DEVICES="${DEVICES}embedfire_doornet1,"
+          [ "${{ github.event.inputs.embedfire_doornet2 }}" = "true" ] && DEVICES="${DEVICES}embedfire_doornet2,"
+          [ "${{ github.event.inputs.embedfire_lubancat_1 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-1,"
+          [ "${{ github.event.inputs.embedfire_lubancat_1n }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-1n,"
+          [ "${{ github.event.inputs.embedfire_lubancat_2 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-2,"
+          [ "${{ github.event.inputs.embedfire_lubancat_2n }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-2n,"
+          [ "${{ github.event.inputs.embedfire_lubancat_4 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-4,"
+          [ "${{ github.event.inputs.embedfire_lubancat_5 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-5,"
+          [ "${{ github.event.inputs.friendlyarm_nanopc_t4 }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopc-t4,"
+          [ "${{ github.event.inputs.friendlyarm_nanopc_t6 }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopc-t6,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r2c }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r2c,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r2s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r2s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r3s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r3s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r4s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r4s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r4se }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r4se,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r5c }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r5c,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r5s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r5s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r6c }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r6c,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r6s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r6s,"
+          [ "${{ github.event.inputs.hinlink_h88k }}" = "true" ] && DEVICES="${DEVICES}hinlink_h88k,"
+          [ "${{ github.event.inputs.hinlink_opc_h66k }}" = "true" ] && DEVICES="${DEVICES}hinlink_opc-h66k,"
+          [ "${{ github.event.inputs.hinlink_opc_h68k }}" = "true" ] && DEVICES="${DEVICES}hinlink_opc-h68k,"
+          [ "${{ github.event.inputs.hinlink_opc_h69k }}" = "true" ] && DEVICES="${DEVICES}hinlink_opc-h69k,"
+          [ "${{ github.event.inputs.radxa_rock_5a }}" = "true" ] && DEVICES="${DEVICES}radxa_rock-5a,"
+          [ "${{ github.event.inputs.radxa_rock_5b }}" = "true" ] && DEVICES="${DEVICES}radxa_rock-5b,"
+          [ "${{ github.event.inputs.xunlong_orangepi_5 }}" = "true" ] && DEVICES="${DEVICES}xunlong_orangepi-5,"
+          [ "${{ github.event.inputs.xunlong_orangepi_5_plus }}" = "true" ] && DEVICES="${DEVICES}xunlong_orangepi-5-plus,"
+          
+          # Remove trailing comma
+          DEVICES="${DEVICES%,}"
+        fi
+        
         if [ "$DEVICES" != "all" ]; then
           # Create a clean suffix from device list
           SUFFIX=$(echo "$DEVICES" | tr ',' '_' | sed 's/[[:space:]]//g')
@@ -186,7 +418,47 @@ jobs:
       id: tag
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        DEVICES="${{ github.event.inputs.target_devices }}"
+        # Build device list from checkbox inputs
+        DEVICES=""
+        
+        if [ "${{ github.event.inputs.build_all }}" = "true" ]; then
+          DEVICES="all"
+        else
+          # Collect selected devices
+          [ "${{ github.event.inputs.armsom_sige3 }}" = "true" ] && DEVICES="${DEVICES}armsom_sige3,"
+          [ "${{ github.event.inputs.armsom_sige7 }}" = "true" ] && DEVICES="${DEVICES}armsom_sige7,"
+          [ "${{ github.event.inputs.embedfire_doornet1 }}" = "true" ] && DEVICES="${DEVICES}embedfire_doornet1,"
+          [ "${{ github.event.inputs.embedfire_doornet2 }}" = "true" ] && DEVICES="${DEVICES}embedfire_doornet2,"
+          [ "${{ github.event.inputs.embedfire_lubancat_1 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-1,"
+          [ "${{ github.event.inputs.embedfire_lubancat_1n }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-1n,"
+          [ "${{ github.event.inputs.embedfire_lubancat_2 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-2,"
+          [ "${{ github.event.inputs.embedfire_lubancat_2n }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-2n,"
+          [ "${{ github.event.inputs.embedfire_lubancat_4 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-4,"
+          [ "${{ github.event.inputs.embedfire_lubancat_5 }}" = "true" ] && DEVICES="${DEVICES}embedfire_lubancat-5,"
+          [ "${{ github.event.inputs.friendlyarm_nanopc_t4 }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopc-t4,"
+          [ "${{ github.event.inputs.friendlyarm_nanopc_t6 }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopc-t6,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r2c }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r2c,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r2s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r2s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r3s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r3s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r4s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r4s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r4se }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r4se,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r5c }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r5c,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r5s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r5s,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r6c }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r6c,"
+          [ "${{ github.event.inputs.friendlyarm_nanopi_r6s }}" = "true" ] && DEVICES="${DEVICES}friendlyarm_nanopi-r6s,"
+          [ "${{ github.event.inputs.hinlink_h88k }}" = "true" ] && DEVICES="${DEVICES}hinlink_h88k,"
+          [ "${{ github.event.inputs.hinlink_opc_h66k }}" = "true" ] && DEVICES="${DEVICES}hinlink_opc-h66k,"
+          [ "${{ github.event.inputs.hinlink_opc_h68k }}" = "true" ] && DEVICES="${DEVICES}hinlink_opc-h68k,"
+          [ "${{ github.event.inputs.hinlink_opc_h69k }}" = "true" ] && DEVICES="${DEVICES}hinlink_opc-h69k,"
+          [ "${{ github.event.inputs.radxa_rock_5a }}" = "true" ] && DEVICES="${DEVICES}radxa_rock-5a,"
+          [ "${{ github.event.inputs.radxa_rock_5b }}" = "true" ] && DEVICES="${DEVICES}radxa_rock-5b,"
+          [ "${{ github.event.inputs.xunlong_orangepi_5 }}" = "true" ] && DEVICES="${DEVICES}xunlong_orangepi-5,"
+          [ "${{ github.event.inputs.xunlong_orangepi_5_plus }}" = "true" ] && DEVICES="${DEVICES}xunlong_orangepi-5-plus,"
+          
+          # Remove trailing comma
+          DEVICES="${DEVICES%,}"
+        fi
+        
         if [ "$DEVICES" != "all" ]; then
           # Create a clean tag from device list
           TAG_SUFFIX=$(echo "$DEVICES" | tr ',' '_' | sed 's/[[:space:]]//g')
