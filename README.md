@@ -45,12 +45,14 @@ hinlink_opc-h69k
    - 从 `Select device to build` 下拉选单中选择要构建的设备
    - 选择 `all` 构建所有设备固件（默认选项）
    - 或选择特定设备（例如 `armsom_sige3`、`friendlyarm_nanopi_r5s` 等）
+   - 勾选 `Use cached kernel from previous build` 启用 kernel 缓存功能（可选）
 5. 点击绿色的 `Run workflow` 按钮开始编译
 
 **注意：**
 - 默认选择 `all` 会构建所有设备的固件
 - 可以从下拉选单中选择单个设备进行构建
 - 支持的设备包括：armsom_sige3, armsom_sige7, embedfire 系列, friendlyarm 系列, hinlink 系列, radxa 系列, xunlong 系列等
+- 启用 kernel 缓存后，会暂存上次编译成功的 kernel，下次编译时直接取出 cache，大幅缩短编译时间
 
 #### immortalwrt_rockchip 和 immortalwrt_rockchip_fwq 工作流
 1. 进入仓库的 `Actions` 页面
@@ -59,6 +61,7 @@ hinlink_opc-h69k
 4. 在弹出的界面中：
    - 勾选 `Build all devices` 构建所有设备固件（默认选项）
    - 或取消 `Build all devices`，然后勾选需要编译的目标设备（支持多选）
+   - 勾选 `Use cached kernel from previous build` 启用 kernel 缓存功能（可选）
 5. 点击绿色的 `Run workflow` 按钮开始编译
 
 ### 固件特色
@@ -68,6 +71,15 @@ hinlink_opc-h69k
 4. 集成部分常用有线、无线、3G / 4G /5G 网卡驱动 可在issues提支持网卡，看本人能力了。。。
 5. 支持在线更新，从2024.03.27之后就能通过后台升级
 6. 特调优化irq中断分配网卡绑定cpu
+7. 支持 Kernel 缓存功能，大幅缩短重复编译时间
+
+### Kernel 缓存功能说明
+- **功能说明：** 在编译时可以选择是否启用 kernel 缓存功能，启用后会暂存上次编译成功的 kernel 文件，下次编译时直接取出 cache，不重新编译 kernel
+- **优势：** 可以大幅缩短编译时间，特别适合频繁编译相同设备固件的场景
+- **使用方法：** 在触发工作流时，勾选 `Use cached kernel from previous build` 选项
+- **缓存范围：** 缓存包括 `build_dir/target-*` 和 `staging_dir/target-*` 目录
+- **缓存策略：** 根据分支、设备和配置文件生成唯一的缓存 key，确保缓存的准确性
+- **默认设置：** 默认关闭，需要手动启用
 
 ### 固件展示
 <img width="1304" alt="image" src="https://github.com/DHDAXCW/OpenWrt_RockChip/assets/74764072/acc32c0b-a8aa-4250-88c1-a1d4d3f24ec2">
