@@ -4,6 +4,27 @@ on:
   # schedule:
   #   - cron: 0 16 * * *
   workflow_dispatch:
+    inputs:
+      target_device:
+        description: 'Select target device'
+        required: true
+        type: choice
+        options:
+          - 'all'
+          - 'armsom_sige3'
+          - 'armsom_sige7'
+          - 'friendlyarm_nanopc-t4'
+          - 'friendlyarm_nanopc-t6'
+          - 'friendlyarm_nanopi-r3s'
+          - 'friendlyarm_nanopi-r4se'
+          - 'friendlyarm_nanopi-r5c'
+          - 'friendlyarm_nanopi-r5s'
+          - 'friendlyarm_nanopi-r6c'
+          - 'friendlyarm_nanopi-r6s'
+          - 'radxa_rock-5a'
+          - 'radxa_rock-5b'
+          - 'xunlong_orangepi-5'
+          - 'xunlong_orangepi-5-plus'
 
 env:
   REPO_URL: https://github.com/DHDAXCW/immortalwrt
@@ -96,6 +117,27 @@ jobs:
         chmod +x $OPENWRT_NAME/*.sh && cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
+    - name: Configure target device
+      run: |
+        cd openwrt
+        if [ "${{ github.event.inputs.target_device }}" != "all" ]; then
+          echo "Configuring for single device: ${{ github.event.inputs.target_device }}"
+          # Remove MULTI_PROFILE setting
+          sed -i '/CONFIG_TARGET_MULTI_PROFILE=y/d' .config
+          # Disable all device profiles
+          sed -i 's/CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_.*=y/# & is not set/g' .config
+          # Enable only selected device
+          DEVICE_CONFIG="CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_${{ github.event.inputs.target_device }}=y"
+          sed -i "s/# ${DEVICE_CONFIG} is not set/${DEVICE_CONFIG}/g" .config
+          # If device wasn't in the list, add it
+          if ! grep -q "${DEVICE_CONFIG}" .config; then
+            echo "${DEVICE_CONFIG}" >> .config
+          fi
+          echo "Single device configuration applied"
+        else
+          echo "Building all devices (MULTI_PROFILE)"
+        fi
+
     - name: Download the installation package
       id: package
       run: |
@@ -121,6 +163,11 @@ jobs:
       run: |
         echo "date1=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
         echo "date2=$(date "+%Y年%m月%d日")" >> $GITHUB_ENV
+        if [ "${{ github.event.inputs.target_device }}" != "all" ]; then
+          echo "device_suffix=_${{ github.event.inputs.target_device }}" >> $GITHUB_ENV
+        else
+          echo "device_suffix=" >> $GITHUB_ENV
+        fi
         cd openwrt
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 || make -j1 V=s
@@ -142,16 +189,27 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.date1 }}_${{ env.OPENWRT_NAME }}_${{ env.OPENWRT_NAME1 }}
+        name: ${{ env.date1 }}_${{ env.OPENWRT_NAME }}_${{ env.OPENWRT_NAME1 }}${{ env.device_suffix }}
         path: ${{ env.FIRMWARE }}
 
     - name: Generate release tags
       id: tag
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "release_tag=${{ env.date2 }}" >> $GITHUB_OUTPUT
+        if [ "${{ github.event.inputs.target_device }}" != "all" ]; then
+          echo "release_tag=${{ env.date2 }}_docker_${{ github.event.inputs.target_device }}" >> $GITHUB_OUTPUT
+          echo "release_name=${{ env.date2 }} Docker - ${{ github.event.inputs.target_device }}" >> $GITHUB_OUTPUT
+        else
+          echo "release_tag=${{ env.date2 }}_docker" >> $GITHUB_OUTPUT
+          echo "release_name=${{ env.date2 }} Docker" >> $GITHUB_OUTPUT
+        fi
         touch release.txt
         echo "📥 固件下载" >> release.txt
+        if [ "${{ github.event.inputs.target_device }}" != "all" ]; then
+          echo "🎯 目标设备: ${{ github.event.inputs.target_device }}" >> release.txt
+        else
+          echo "🎯 目标设备: 全部设备 (Multi-Profile)" >> release.txt
+        fi
         echo "status=success" >> $GITHUB_OUTPUT
         
     - name: Publish to release
@@ -161,6 +219,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.date3 }}
+        name: ${{ steps.tag.outputs.release_name }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
