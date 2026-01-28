@@ -50,8 +50,8 @@ hinlink_opc-h69k
 
 **注意：**
 - 默认会构建所有设备的固件
-- 取消 `Build all devices` 后需要在 `devices` 输入框中输入设备名称（使用下划线，多个设备用逗号分隔）
-- 设备名称中的下划线会自动转换为连字符（例如 `friendlyarm_nanopi_r5s` → `friendlyarm_nanopi-r5s`）
+- 取消 `Build all devices` 后需要在 `devices` 输入框中输入设备名称（使用下划线或连字符均可，多个设备用逗号分隔）
+- 设备名称中的下划线会自动转换为连字符（例如 `friendlyarm_nanopi_r5s` 和 `friendlyarm_nanopi-r5s` 都是有效的）
 - 选择多个设备时，系统会自动启用 MULTI_PROFILE 模式
 - 如果不选择 `Build all devices` 且没有输入任何设备，工作流将报错
 

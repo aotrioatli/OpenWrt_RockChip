@@ -142,8 +142,6 @@ jobs:
           # Enable selected devices (comma-separated)
           IFS=',' read -ra DEVICE_ARRAY <<< "$DEVICES"
           for device in "${DEVICE_ARRAY[@]}"; do
-            # Trim whitespace
-            device=$(echo "$device" | xargs)
             DEVICE_CONFIG="CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_${device}=y"
             echo "Enabling device: $device"
             sed -i "s/# ${DEVICE_CONFIG} is not set/${DEVICE_CONFIG}/g" .config
@@ -199,11 +197,16 @@ jobs:
           
           # Trim whitespace and replace underscores with hyphens for device names
           DEVICES=$(echo "$DEVICES" | sed 's/[[:space:]]//g' | sed 's/_/-/g')
+          
+          if [ -z "$DEVICES" ]; then
+            echo "Error: No devices selected. Please provide a comma-separated list of devices or enable 'Build all devices'."
+            exit 1
+          fi
         fi
         
         if [ "$DEVICES" != "all" ]; then
           # Create a clean suffix from device list
-          SUFFIX=$(echo "$DEVICES" | tr ',' '_' | sed 's/[[:space:]]//g')
+          SUFFIX=$(echo "$DEVICES" | tr ',' '_')
           echo "device_suffix=_${SUFFIX}" >> $GITHUB_ENV
         else
           echo "device_suffix=" >> $GITHUB_ENV
@@ -247,11 +250,16 @@ jobs:
           
           # Trim whitespace and replace underscores with hyphens for device names
           DEVICES=$(echo "$DEVICES" | sed 's/[[:space:]]//g' | sed 's/_/-/g')
+          
+          if [ -z "$DEVICES" ]; then
+            echo "Error: No devices selected. Please provide a comma-separated list of devices or enable 'Build all devices'."
+            exit 1
+          fi
         fi
         
         if [ "$DEVICES" != "all" ]; then
           # Create a clean tag from device list
-          TAG_SUFFIX=$(echo "$DEVICES" | tr ',' '_' | sed 's/[[:space:]]//g')
+          TAG_SUFFIX=$(echo "$DEVICES" | tr ',' '_')
           echo "release_tag=${{ env.date1 }}_docker_${TAG_SUFFIX}" >> $GITHUB_OUTPUT
           echo "release_name=${{ env.date2 }} Docker - ${DEVICES}" >> $GITHUB_OUTPUT
         else
