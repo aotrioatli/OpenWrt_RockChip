@@ -177,11 +177,11 @@ jobs:
 
     steps:
     - name: Check out the project branch
-      uses: actions/checkout@main
+      uses: actions/checkout@v4
 
     - name: Download firmware source code
       run: |
-        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+        git clone --depth 1 --single-branch $REPO_URL -b $REPO_BRANCH openwrt
 
     - name: Update & install feeds
       working-directory: ./openwrt

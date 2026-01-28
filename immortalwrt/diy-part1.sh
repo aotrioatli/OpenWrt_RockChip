@@ -17,20 +17,26 @@ rm -rf feeds/luci/applications/luci-app-argon-config
 # Clone community packages to package/community
 mkdir package/community
 pushd package/community
-git clone --depth=1 https://github.com/fw876/helloworld
-git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall2
-git clone --depth=1 https://github.com/nikkinikki-org/OpenWrt-nikki
-git clone --depth=1 https://github.com/DHDAXCW/dhdaxcw-app
-git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon
-git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
-git clone --depth=1 https://github.com/linkease/istore
-git clone --depth=1 https://github.com/Siriling/5G-Modem-Support && rm -rf 5G-Modem-Support/rooter
-git clone --depth=1 https://github.com/gdy666/luci-app-lucky
+
+# Clone packages in parallel for faster execution
+git clone --depth=1 --single-branch https://github.com/fw876/helloworld &
+git clone --depth=1 --single-branch https://github.com/xiaorouji/openwrt-passwall2 &
+git clone --depth=1 --single-branch https://github.com/nikkinikki-org/OpenWrt-nikki &
+git clone --depth=1 --single-branch https://github.com/DHDAXCW/dhdaxcw-app &
+git clone --depth=1 --single-branch https://github.com/jerrykuku/luci-theme-argon &
+git clone --depth=1 --single-branch https://github.com/jerrykuku/luci-app-argon-config &
+git clone --depth=1 --single-branch https://github.com/linkease/istore &
+git clone --depth=1 --single-branch https://github.com/Siriling/5G-Modem-Support &
+git clone --depth=1 --single-branch https://github.com/gdy666/luci-app-lucky &
+wait  # Wait for all background git clones to complete
+
+rm -rf 5G-Modem-Support/rooter
 popd
 
 # add luci-app-mosdns
 rm -rf feeds/packages/lang/golang
-git clone https://github.com/sbwml/packages_lang_golang -b 23.x feeds/packages/lang/golang
+git clone --depth=1 --single-branch https://github.com/sbwml/packages_lang_golang -b 23.x feeds/packages/lang/golang &
 rm -rf feeds/packages/net/v2ray-geodata
-git clone https://github.com/sbwml/luci-app-mosdns -b v5 package/mosdns
-git clone https://github.com/sbwml/v2ray-geodata package/v2ray-geodata
+git clone --depth=1 --single-branch https://github.com/sbwml/luci-app-mosdns -b v5 package/mosdns &
+git clone --depth=1 --single-branch https://github.com/sbwml/v2ray-geodata package/v2ray-geodata &
+wait  # Wait for all background git clones to complete
