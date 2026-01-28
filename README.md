@@ -36,19 +36,33 @@ hinlink_opc-h69k
 - 电报交流群：https://t.me/armopenwrt
 
 ### 如何触发编译
+
+#### immortalwrt_rockchip_docker 工作流
 1. 进入仓库的 `Actions` 页面
-2. 选择需要运行的工作流（`immortalwrt_rockchip`、`immortalwrt_rockchip_docker` 或 `immortalwrt_rockchip_fwq`）
+2. 选择 `immortalwrt_rockchip_docker` 工作流
+3. 点击 `Run workflow` 按钮
+4. 在弹出的界面中：
+   - 勾选 `Build all devices` 构建所有设备固件（默认选项）
+   - 或取消 `Build all devices`，在 `devices` 输入框中输入逗号分隔的设备列表
+     - 示例：`armsom_sige3,friendlyarm_nanopi_r5s`
+     - 示例：`hinlink_h88k,radxa_rock_5b`
+5. 点击绿色的 `Run workflow` 按钮开始编译
+
+**注意：**
+- 默认会构建所有设备的固件
+- 取消 `Build all devices` 后需要在 `devices` 输入框中输入设备名称（使用下划线，多个设备用逗号分隔）
+- 设备名称中的下划线会自动转换为连字符（例如 `friendlyarm_nanopi_r5s` → `friendlyarm_nanopi-r5s`）
+- 选择多个设备时，系统会自动启用 MULTI_PROFILE 模式
+- 如果不选择 `Build all devices` 且没有输入任何设备，工作流将报错
+
+#### immortalwrt_rockchip 和 immortalwrt_rockchip_fwq 工作流
+1. 进入仓库的 `Actions` 页面
+2. 选择需要运行的工作流（`immortalwrt_rockchip` 或 `immortalwrt_rockchip_fwq`）
 3. 点击 `Run workflow` 按钮
 4. 在弹出的界面中：
    - 勾选 `Build all devices` 构建所有设备固件（默认选项）
    - 或取消 `Build all devices`，然后勾选需要编译的目标设备（支持多选）
 5. 点击绿色的 `Run workflow` 按钮开始编译
-
-**注意：**
-- 默认会构建所有设备的固件
-- 取消 `Build all devices` 后可以选择一个或多个特定设备
-- 选择多个设备时，系统会自动启用 MULTI_PROFILE 模式
-- 如果不选择 `Build all devices` 且没有勾选任何设备，工作流将报错
 
 ### 固件特色
 1. 集成 iStore 应用商店，可根据自己需求自由安装所需插件
