@@ -35,6 +35,21 @@ hinlink_opc-h69k
 - 刷机方法请参考dn2刷机 https://github.com/DHDAXCW/OpenWrt_RockChip/blob/master/data/emmc.md
 - 电报交流群：https://t.me/armopenwrt
 
+### 如何触发编译
+1. 进入仓库的 `Actions` 页面
+2. 选择需要运行的工作流（`immortalwrt_rockchip`、`immortalwrt_rockchip_docker` 或 `immortalwrt_rockchip_fwq`）
+3. 点击 `Run workflow` 按钮
+4. 在弹出的界面中：
+   - 勾选 `Build all devices` 构建所有设备固件（默认选项）
+   - 或取消 `Build all devices`，然后勾选需要编译的目标设备（支持多选）
+5. 点击绿色的 `Run workflow` 按钮开始编译
+
+**注意：**
+- 默认会构建所有设备的固件
+- 取消 `Build all devices` 后可以选择一个或多个特定设备
+- 选择多个设备时，系统会自动启用 MULTI_PROFILE 模式
+- 如果不选择 `Build all devices` 且没有勾选任何设备，工作流将报错
+
 ### 固件特色
 1. 集成 iStore 应用商店，可根据自己需求自由安装所需插件
 2. 集成应用过滤插件，支持游戏、视频、聊天、下载等 APP 过滤
