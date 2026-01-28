@@ -4,6 +4,12 @@ on:
   # schedule:
   #   - cron: 0 16 * * *
   workflow_dispatch:
+    inputs:
+      target_devices:
+        description: 'Target devices (comma-separated or "all"). Available: armsom_sige3, armsom_sige7, embedfire_doornet1, embedfire_doornet2, embedfire_lubancat-1, embedfire_lubancat-1n, embedfire_lubancat-2, embedfire_lubancat-2n, embedfire_lubancat-4, embedfire_lubancat-5, friendlyarm_nanopc-t4, friendlyarm_nanopc-t6, friendlyarm_nanopi-r2c, friendlyarm_nanopi-r2s, friendlyarm_nanopi-r3s, friendlyarm_nanopi-r4s, friendlyarm_nanopi-r4se, friendlyarm_nanopi-r5c, friendlyarm_nanopi-r5s, friendlyarm_nanopi-r6c, friendlyarm_nanopi-r6s, hinlink_h88k, hinlink_opc-h66k, hinlink_opc-h68k, hinlink_opc-h69k, radxa_rock-5a, radxa_rock-5b, xunlong_orangepi-5, xunlong_orangepi-5-plus'
+        required: true
+        type: string
+        default: 'all'
 
 env:
   REPO_URL: https://github.com/DHDAXCW/immortalwrt
@@ -31,7 +37,7 @@ jobs:
         remove-android: 'true'
         remove-haskell: 'true'
         remove-codeql: 'true'
-        
+
     - name: Check out the project branch
       uses: actions/checkout@main
       with:
@@ -47,7 +53,7 @@ jobs:
         sudo rm -rf /var/lib/apt/lists/* || true
         rm -rf ~/.cache/* || true
         echo "Cache cleanup complete."
-          
+
     - name: Initialize the compilation environment
       env:
         DEBIAN_FRONTEND: noninteractive
@@ -66,14 +72,14 @@ jobs:
         sudo -E apt-get -qq autoremove --purge
         sudo -E apt-get -qq clean ) &
         sudo timedatectl set-timezone "$TZ"
-        
+
     - name: Initialize Environment and Display System Info
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
         chmod +x $OPENWRT_NAME/*.sh
         $GITHUB_WORKSPACE/$OPENWRT_NAME/system-Information.sh
-        
+
     - name: Download firmware source code
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
@@ -83,7 +89,7 @@ jobs:
       run: |
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        
+
     - name: Load feeds.conf.default
       run: |
         chmod +x $OPENWRT_NAME/*.sh
@@ -95,6 +101,43 @@ jobs:
         [ -e "$CONFIG_FILE" ] && cat "$CONFIG_FILE" > openwrt/.config
         chmod +x $OPENWRT_NAME/*.sh && cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
+
+    - name: Configure target device
+      run: |
+        cd openwrt
+        DEVICES="${{ github.event.inputs.target_devices }}"
+
+        if [ "$DEVICES" = "all" ]; then
+          echo "Building all devices (MULTI_PROFILE)"
+        else
+          echo "Configuring for selected devices: $DEVICES"
+          # Remove MULTI_PROFILE setting
+          sed -i '/CONFIG_TARGET_MULTI_PROFILE=y/d' .config
+          # Disable all device profiles first
+          sed -i 's/CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_.*=y/# & is not set/g' .config
+
+          # Enable selected devices (comma-separated)
+          IFS=',' read -ra DEVICE_ARRAY <<< "$DEVICES"
+          for device in "${DEVICE_ARRAY[@]}"; do
+            # Trim whitespace
+            device=$(echo "$device" | xargs)
+            DEVICE_CONFIG="CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_${device}=y"
+            echo "Enabling device: $device"
+            sed -i "s/# ${DEVICE_CONFIG} is not set/${DEVICE_CONFIG}/g" .config
+            # If device wasn't in the list, add it
+            if ! grep -q "${DEVICE_CONFIG}" .config; then
+              echo "${DEVICE_CONFIG}" >> .config
+            fi
+          done
+
+          # If multiple devices selected, enable MULTI_PROFILE
+          if [ ${#DEVICE_ARRAY[@]} -gt 1 ]; then
+            echo "Multiple devices selected, enabling MULTI_PROFILE"
+            sed -i '/CONFIG_TARGET_rockchip_armv8=y/a CONFIG_TARGET_MULTI_PROFILE=y' .config
+          fi
+
+          echo "Device configuration applied"
+        fi
 
     - name: Download the installation package
       id: package
@@ -110,6 +153,14 @@ jobs:
       run: |
         echo "date1=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
         echo "date2=$(date "+%Y年%m月%d日")" >> $GITHUB_ENV
+        DEVICES="${{ github.event.inputs.target_devices }}"
+        if [ "$DEVICES" != "all" ]; then
+          # Create a clean suffix from device list
+          SUFFIX=$(echo "$DEVICES" | tr ',' '_' | sed 's/[[:space:]]//g')
+          echo "device_suffix=_${SUFFIX}" >> $GITHUB_ENV
+        else
+          echo "device_suffix=" >> $GITHUB_ENV
+        fi
         cd openwrt
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 || make -j1 V=s
@@ -123,23 +174,37 @@ jobs:
         rm -rf packages *.buildinfo *.manifest *.json
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
-        
+
     - name: Upload the firmware to github
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.date1 }}_${{ env.OPENWRT_NAME }}_${{ env.OPENWRT_NAME1 }}
+        name: ${{ env.date1 }}_${{ env.OPENWRT_NAME }}_${{ env.OPENWRT_NAME1 }}${{ env.device_suffix }}
         path: ${{ env.FIRMWARE }}
 
     - name: Generate release tags
       id: tag
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "release_tag=${{ env.date2 }}" >> $GITHUB_OUTPUT
+        DEVICES="${{ github.event.inputs.target_devices }}"
+        if [ "$DEVICES" != "all" ]; then
+          # Create a clean tag from device list
+          TAG_SUFFIX=$(echo "$DEVICES" | tr ',' '_' | sed 's/[[:space:]]//g')
+          echo "release_tag=${{ env.date1 }}_${TAG_SUFFIX}" >> $GITHUB_OUTPUT
+          echo "release_name=${{ env.date2 }} - ${DEVICES}" >> $GITHUB_OUTPUT
+        else
+          echo "release_tag=${{ env.date1 }}" >> $GITHUB_OUTPUT
+          echo "release_name=${{ env.date2 }}" >> $GITHUB_OUTPUT
+        fi
         touch release.txt
         echo "📥 固件下载" >> release.txt
+        if [ "$DEVICES" != "all" ]; then
+          echo "🎯 目标设备: ${DEVICES}" >> release.txt
+        else
+          echo "🎯 目标设备: 全部设备 (Multi-Profile)" >> release.txt
+        fi
         echo "status=success" >> $GITHUB_OUTPUT
-        
+
     - name: Publish to release
       uses: softprops/action-gh-release@v1
       if: steps.tag.outputs.status == 'success' && !cancelled()
@@ -147,6 +212,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.date2 }}
+        name: ${{ steps.tag.outputs.release_name }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt

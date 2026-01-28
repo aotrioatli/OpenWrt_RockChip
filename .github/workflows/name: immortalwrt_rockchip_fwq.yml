@@ -2,6 +2,12 @@ name: immortalwrt_rockchip_fwq
 
 on:
   workflow_dispatch:
+    inputs:
+      target_devices:
+        description: 'Target devices (comma-separated or "all"). Available: armsom_sige3, armsom_sige7, embedfire_doornet1, embedfire_doornet2, embedfire_lubancat-1, embedfire_lubancat-1n, embedfire_lubancat-2, embedfire_lubancat-2n, embedfire_lubancat-4, embedfire_lubancat-5, friendlyarm_nanopc-t4, friendlyarm_nanopc-t6, friendlyarm_nanopi-r2c, friendlyarm_nanopi-r2s, friendlyarm_nanopi-r3s, friendlyarm_nanopi-r4s, friendlyarm_nanopi-r4se, friendlyarm_nanopi-r5c, friendlyarm_nanopi-r5s, friendlyarm_nanopi-r6c, friendlyarm_nanopi-r6s, hinlink_h88k, hinlink_opc-h66k, hinlink_opc-h68k, hinlink_opc-h69k, radxa_rock-5a, radxa_rock-5b, xunlong_orangepi-5, xunlong_orangepi-5-plus'
+        required: true
+        type: string
+        default: 'all'
 
 env:
   REPO_URL: https://github.com/DHDAXCW/immortalwrt
@@ -22,17 +28,17 @@ jobs:
     steps:
     - name: Check out the project branch
       uses: actions/checkout@main
-      
+
     - name: Download firmware source code
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
-         
+
     - name: Update & install feeds
       working-directory: ./openwrt
       run: |
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        
+
     - name: Load feeds.conf.default
       run: |
         chmod +x $OPENWRT_NAME/*.sh
@@ -45,6 +51,43 @@ jobs:
         chmod +x $OPENWRT_NAME/*.sh && cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
+    - name: Configure target device
+      run: |
+        cd openwrt
+        DEVICES="${{ github.event.inputs.target_devices }}"
+
+        if [ "$DEVICES" = "all" ]; then
+          echo "Building all devices (MULTI_PROFILE)"
+        else
+          echo "Configuring for selected devices: $DEVICES"
+          # Remove MULTI_PROFILE setting
+          sed -i '/CONFIG_TARGET_MULTI_PROFILE=y/d' .config
+          # Disable all device profiles first
+          sed -i 's/CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_.*=y/# & is not set/g' .config
+
+          # Enable selected devices (comma-separated)
+          IFS=',' read -ra DEVICE_ARRAY <<< "$DEVICES"
+          for device in "${DEVICE_ARRAY[@]}"; do
+            # Trim whitespace
+            device=$(echo "$device" | xargs)
+            DEVICE_CONFIG="CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_${device}=y"
+            echo "Enabling device: $device"
+            sed -i "s/# ${DEVICE_CONFIG} is not set/${DEVICE_CONFIG}/g" .config
+            # If device wasn't in the list, add it
+            if ! grep -q "${DEVICE_CONFIG}" .config; then
+              echo "${DEVICE_CONFIG}" >> .config
+            fi
+          done
+
+          # If multiple devices selected, enable MULTI_PROFILE
+          if [ ${#DEVICE_ARRAY[@]} -gt 1 ]; then
+            echo "Multiple devices selected, enabling MULTI_PROFILE"
+            sed -i '/CONFIG_TARGET_rockchip_armv8=y/a CONFIG_TARGET_MULTI_PROFILE=y' .config
+          fi
+
+          echo "Device configuration applied"
+        fi
+
     - name: Download the installation package
       id: package
       run: |
@@ -54,7 +97,7 @@ jobs:
         make download -j$(nproc)
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-        
+
     - name: Compile the firmware
       id: compile
       run: |
