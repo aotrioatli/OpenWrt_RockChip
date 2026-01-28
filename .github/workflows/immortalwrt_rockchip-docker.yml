@@ -5,16 +5,42 @@ on:
   #   - cron: 0 16 * * *
   workflow_dispatch:
     inputs:
-      build_all:
-        description: 'Build all devices'
-        required: false
-        type: boolean
-        default: true
-      devices:
-        description: 'Comma-separated list of devices to build (e.g., armsom_sige3,friendlyarm_nanopi_r5s). Available: armsom_sige3, armsom_sige7, embedfire_doornet1, embedfire_doornet2, embedfire_lubancat_1, embedfire_lubancat_1n, embedfire_lubancat_2, embedfire_lubancat_2n, embedfire_lubancat_4, embedfire_lubancat_5, friendlyarm_nanopc_t4, friendlyarm_nanopc_t6, friendlyarm_nanopi_r2c, friendlyarm_nanopi_r2s, friendlyarm_nanopi_r3s, friendlyarm_nanopi_r4s, friendlyarm_nanopi_r4se, friendlyarm_nanopi_r5c, friendlyarm_nanopi_r5s, friendlyarm_nanopi_r6c, friendlyarm_nanopi_r6s, hinlink_h88k, hinlink_opc_h66k, hinlink_opc_h68k, hinlink_opc_h69k, radxa_rock_5a, radxa_rock_5b, xunlong_orangepi_5, xunlong_orangepi_5_plus'
-        required: false
-        type: string
-        default: ''
+      device:
+        description: 'Select device to build'
+        required: true
+        type: choice
+        default: 'all'
+        options:
+          - all
+          - armsom_sige3
+          - armsom_sige7
+          - embedfire_doornet1
+          - embedfire_doornet2
+          - embedfire_lubancat_1
+          - embedfire_lubancat_1n
+          - embedfire_lubancat_2
+          - embedfire_lubancat_2n
+          - embedfire_lubancat_4
+          - embedfire_lubancat_5
+          - friendlyarm_nanopc_t4
+          - friendlyarm_nanopc_t6
+          - friendlyarm_nanopi_r2c
+          - friendlyarm_nanopi_r2s
+          - friendlyarm_nanopi_r3s
+          - friendlyarm_nanopi_r4s
+          - friendlyarm_nanopi_r4se
+          - friendlyarm_nanopi_r5c
+          - friendlyarm_nanopi_r5s
+          - friendlyarm_nanopi_r6c
+          - friendlyarm_nanopi_r6s
+          - hinlink_h88k
+          - hinlink_opc_h66k
+          - hinlink_opc_h68k
+          - hinlink_opc_h69k
+          - radxa_rock_5a
+          - radxa_rock_5b
+          - xunlong_orangepi_5
+          - xunlong_orangepi_5_plus
 
 env:
   REPO_URL: https://github.com/DHDAXCW/immortalwrt
@@ -111,50 +137,29 @@ jobs:
       run: |
         cd openwrt
         
-        # Build device list from inputs
-        DEVICES=""
+        # Get selected device from dropdown
+        SELECTED_DEVICE="${{ github.event.inputs.device }}"
         
-        if [ "${{ github.event.inputs.build_all }}" = "true" ]; then
-          echo "Building all devices (MULTI_PROFILE)"
-          DEVICES="all"
-        else
-          # Get devices from comma-separated input
-          DEVICES="${{ github.event.inputs.devices }}"
-          
-          # Trim whitespace and replace underscores with hyphens for device names
-          DEVICES=$(echo "$DEVICES" | sed 's/[[:space:]]//g' | sed 's/_/-/g')
-          
-          if [ -z "$DEVICES" ]; then
-            echo "Error: No devices selected. Please provide a comma-separated list of devices or enable 'Build all devices'."
-            exit 1
-          fi
-        fi
-
-        if [ "$DEVICES" = "all" ]; then
+        if [ "$SELECTED_DEVICE" = "all" ]; then
           echo "Building all devices (MULTI_PROFILE)"
         else
-          echo "Configuring for selected devices: $DEVICES"
+          echo "Configuring for device: $SELECTED_DEVICE"
+          
+          # Convert underscores to hyphens for device name
+          DEVICE_NAME=$(echo "$SELECTED_DEVICE" | sed 's/_/-/g')
+          
           # Remove MULTI_PROFILE setting
           sed -i '/CONFIG_TARGET_MULTI_PROFILE=y/d' .config
           # Disable all device profiles first
           sed -i 's/CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_.*=y/# & is not set/g' .config
 
-          # Enable selected devices (comma-separated)
-          IFS=',' read -ra DEVICE_ARRAY <<< "$DEVICES"
-          for device in "${DEVICE_ARRAY[@]}"; do
-            DEVICE_CONFIG="CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_${device}=y"
-            echo "Enabling device: $device"
-            sed -i "s/# ${DEVICE_CONFIG} is not set/${DEVICE_CONFIG}/g" .config
-            # If device wasn't in the list, add it
-            if ! grep -q "${DEVICE_CONFIG}" .config; then
-              echo "${DEVICE_CONFIG}" >> .config
-            fi
-          done
-
-          # If multiple devices selected, enable MULTI_PROFILE
-          if [ ${#DEVICE_ARRAY[@]} -gt 1 ]; then
-            echo "Multiple devices selected, enabling MULTI_PROFILE"
-            sed -i '/CONFIG_TARGET_rockchip_armv8=y/a CONFIG_TARGET_MULTI_PROFILE=y' .config
+          # Enable selected device
+          DEVICE_CONFIG="CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_${DEVICE_NAME}=y"
+          echo "Enabling device: $DEVICE_NAME"
+          sed -i "s/# ${DEVICE_CONFIG} is not set/${DEVICE_CONFIG}/g" .config
+          # If device wasn't in the list, add it
+          if ! grep -q "${DEVICE_CONFIG}" .config; then
+            echo "${DEVICE_CONFIG}" >> .config
           fi
 
           echo "Device configuration applied"
@@ -186,28 +191,13 @@ jobs:
         echo "date1=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
         echo "date2=$(date "+%Y年%m月%d日")" >> $GITHUB_ENV
         
-        # Build device list from inputs
-        DEVICES=""
+        # Get selected device from dropdown
+        SELECTED_DEVICE="${{ github.event.inputs.device }}"
         
-        if [ "${{ github.event.inputs.build_all }}" = "true" ]; then
-          DEVICES="all"
-        else
-          # Get devices from comma-separated input
-          DEVICES="${{ github.event.inputs.devices }}"
-          
-          # Trim whitespace and replace underscores with hyphens for device names
-          DEVICES=$(echo "$DEVICES" | sed 's/[[:space:]]//g' | sed 's/_/-/g')
-          
-          if [ -z "$DEVICES" ]; then
-            echo "Error: No devices selected. Please provide a comma-separated list of devices or enable 'Build all devices'."
-            exit 1
-          fi
-        fi
-        
-        if [ "$DEVICES" != "all" ]; then
-          # Create a clean suffix from device list
-          SUFFIX=$(echo "$DEVICES" | tr ',' '_')
-          echo "device_suffix=_${SUFFIX}" >> $GITHUB_ENV
+        if [ "$SELECTED_DEVICE" != "all" ]; then
+          # Convert underscores to hyphens and create suffix
+          DEVICE_NAME=$(echo "$SELECTED_DEVICE" | sed 's/_/-/g')
+          echo "device_suffix=_${DEVICE_NAME}" >> $GITHUB_ENV
         else
           echo "device_suffix=" >> $GITHUB_ENV
         fi
@@ -239,37 +229,23 @@ jobs:
       id: tag
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        # Build device list from inputs
-        DEVICES=""
+        # Get selected device from dropdown
+        SELECTED_DEVICE="${{ github.event.inputs.device }}"
         
-        if [ "${{ github.event.inputs.build_all }}" = "true" ]; then
-          DEVICES="all"
-        else
-          # Get devices from comma-separated input
-          DEVICES="${{ github.event.inputs.devices }}"
-          
-          # Trim whitespace and replace underscores with hyphens for device names
-          DEVICES=$(echo "$DEVICES" | sed 's/[[:space:]]//g' | sed 's/_/-/g')
-          
-          if [ -z "$DEVICES" ]; then
-            echo "Error: No devices selected. Please provide a comma-separated list of devices or enable 'Build all devices'."
-            exit 1
-          fi
-        fi
-        
-        if [ "$DEVICES" != "all" ]; then
-          # Create a clean tag from device list
-          TAG_SUFFIX=$(echo "$DEVICES" | tr ',' '_')
-          echo "release_tag=${{ env.date1 }}_docker_${TAG_SUFFIX}" >> $GITHUB_OUTPUT
-          echo "release_name=${{ env.date2 }} Docker - ${DEVICES}" >> $GITHUB_OUTPUT
+        if [ "$SELECTED_DEVICE" != "all" ]; then
+          # Convert underscores to hyphens for device name
+          DEVICE_NAME=$(echo "$SELECTED_DEVICE" | sed 's/_/-/g')
+          echo "release_tag=${{ env.date1 }}_docker_${DEVICE_NAME}" >> $GITHUB_OUTPUT
+          echo "release_name=${{ env.date2 }} Docker - ${DEVICE_NAME}" >> $GITHUB_OUTPUT
         else
           echo "release_tag=${{ env.date1 }}_docker" >> $GITHUB_OUTPUT
           echo "release_name=${{ env.date2 }} Docker" >> $GITHUB_OUTPUT
         fi
         touch release.txt
         echo "📥 固件下载" >> release.txt
-        if [ "$DEVICES" != "all" ]; then
-          echo "🎯 目标设备: ${DEVICES}" >> release.txt
+        if [ "$SELECTED_DEVICE" != "all" ]; then
+          DEVICE_NAME=$(echo "$SELECTED_DEVICE" | sed 's/_/-/g')
+          echo "🎯 目标设备: ${DEVICE_NAME}" >> release.txt
         else
           echo "🎯 目标设备: 全部设备 (Multi-Profile)" >> release.txt
         fi

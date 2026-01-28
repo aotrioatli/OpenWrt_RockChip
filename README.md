@@ -42,18 +42,15 @@ hinlink_opc-h69k
 2. 选择 `immortalwrt_rockchip_docker` 工作流
 3. 点击 `Run workflow` 按钮
 4. 在弹出的界面中：
-   - 勾选 `Build all devices` 构建所有设备固件（默认选项）
-   - 或取消 `Build all devices`，在 `devices` 输入框中输入逗号分隔的设备列表
-     - 示例：`armsom_sige3,friendlyarm_nanopi_r5s`
-     - 示例：`hinlink_h88k,radxa_rock_5b`
+   - 从 `Select device to build` 下拉选单中选择要构建的设备
+   - 选择 `all` 构建所有设备固件（默认选项）
+   - 或选择特定设备（例如 `armsom_sige3`、`friendlyarm_nanopi_r5s` 等）
 5. 点击绿色的 `Run workflow` 按钮开始编译
 
 **注意：**
-- 默认会构建所有设备的固件
-- 取消 `Build all devices` 后需要在 `devices` 输入框中输入设备名称（使用下划线或连字符均可，多个设备用逗号分隔）
-- 设备名称中的下划线会自动转换为连字符（例如 `friendlyarm_nanopi_r5s` 和 `friendlyarm_nanopi-r5s` 都是有效的）
-- 选择多个设备时，系统会自动启用 MULTI_PROFILE 模式
-- 如果不选择 `Build all devices` 且没有输入任何设备，工作流将报错
+- 默认选择 `all` 会构建所有设备的固件
+- 可以从下拉选单中选择单个设备进行构建
+- 支持的设备包括：armsom_sige3, armsom_sige7, embedfire 系列, friendlyarm 系列, hinlink 系列, radxa 系列, xunlong 系列等
 
 #### immortalwrt_rockchip 和 immortalwrt_rockchip_fwq 工作流
 1. 进入仓库的 `Actions` 页面
