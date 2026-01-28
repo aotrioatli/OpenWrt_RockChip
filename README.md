@@ -1,8 +1,5 @@
 ### 机场推荐 [ENET--IEPL内网专线接入](https://www.easyenable.com/#/register?code=CNC7La7m)
 # OpenWrt — RockChip多设备固件云编译
-
-> **🚀 编译速度优化：** 本项目已进行全面的编译流程优化！详见 [OPTIMIZATION.md](OPTIMIZATION.md) 了解如何提高 40-70% 的构建速度。
-
 - 支持rk3588，rk356x，rk3399，rk3328
 ### 源代码地址
 https://github.com/DHDAXCW/lede-rockchip
@@ -75,25 +72,6 @@ hinlink_opc-h69k
 5. 支持在线更新，从2024.03.27之后就能通过后台升级
 6. 特调优化irq中断分配网卡绑定cpu
 7. 支持 Kernel 缓存功能，大幅缩短重复编译时间
-8. **新增：全面编译优化，提速 40-70%** 🚀
-
-### 编译速度优化 ⚡
-
-本项目已实施全面的编译流程优化，显著提升构建速度：
-
-#### 优化内容
-- ✅ **Ccache 编译缓存** - 后续构建节省 30-50% 编译时间
-- ✅ **OpenWrt DL 目录缓存** - 节省 10-15 分钟下载时间
-- ✅ **并行 Git Clone** - 节省 3-5 分钟代码克隆时间
-- ✅ **优化 Git 操作** - 使用浅克隆减少数据传输
-- ✅ **更新 Actions 版本** - 使用最新的 GitHub Actions
-
-#### 性能提升
-- **首次构建：** 快 8-15% （节省 6-10 分钟）
-- **后续构建（有缓存）：** 快 40-60% （节省 35-63 分钟）
-- **启用 Kernel 缓存：** 快 50-70% （节省 55-93 分钟）
-
-📖 **详细说明请参考：** [OPTIMIZATION.md](OPTIMIZATION.md)
 
 ### Kernel 缓存功能说明
 - **功能说明：** 在编译时可以选择是否启用 kernel 缓存功能，启用后会暂存上次编译成功的 kernel 文件，下次编译时直接取出 cache，不重新编译 kernel

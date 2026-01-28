@@ -75,15 +75,26 @@ jobs:
         remove-codeql: 'true'
 
     - name: Check out the project branch
-      uses: actions/checkout@v4
+      uses: actions/checkout@main
       with:
-          fetch-depth: 1
+          fetch-depth: 0
+
+    - name: Clean build caches
+      run: |
+        echo "Cleaning previous build artifacts and caches..."
+        sudo rm -rf $GITHUB_WORKSPACE/openwrt || true
+        sudo rm -rf $RUNNER_TEMP/* || true
+        sudo rm -rf $RUNNER_TOOL_CACHE/* || true
+        sudo apt-get -qq clean || true
+        sudo rm -rf /var/lib/apt/lists/* || true
+        rm -rf ~/.cache/* || true
+        echo "Cache cleanup complete."
 
     - name: Initialize the compilation environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo -E apt-get -qq update
+        ( sudo -E apt-get -qq update
         sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
             bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
             g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev \
@@ -95,7 +106,7 @@ jobs:
         sudo -E apt-get -qq purge azure-cli ghc* zulu* hhvm llvm* firefox powershell openjdk* dotnet* google* mysql* php* android* rename speedtest-cli
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo -E apt-get -qq autoremove --purge
-        sudo -E apt-get -qq clean
+        sudo -E apt-get -qq clean ) &
         sudo timedatectl set-timezone "$TZ"
 
     - name: Initialize Environment and Display System Info
@@ -107,16 +118,7 @@ jobs:
 
     - name: Download firmware source code
       run: |
-        git clone --depth 1 --single-branch $REPO_URL -b $REPO_BRANCH openwrt
-
-    - name: Setup ccache
-      uses: actions/cache@v4
-      with:
-        path: ~/.ccache
-        key: ccache-${{ env.REPO_BRANCH }}-${{ github.event.inputs.device }}-${{ github.run_id }}
-        restore-keys: |
-          ccache-${{ env.REPO_BRANCH }}-${{ github.event.inputs.device }}-
-          ccache-${{ env.REPO_BRANCH }}-
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
 
     - name: Update & install feeds
       working-directory: ./openwrt
@@ -135,13 +137,6 @@ jobs:
         [ -e "$CONFIG_FILE" ] && cat "$CONFIG_FILE" > openwrt/.config
         chmod +x $OPENWRT_NAME/*.sh && cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-
-    - name: Configure ccache
-      run: |
-        cd openwrt
-        echo "CONFIG_CCACHE=y" >> .config
-        ccache -M 5G
-        ccache -s
 
     - name: Configure target device
       run: |
@@ -174,14 +169,6 @@ jobs:
 
           echo "Device configuration applied"
         fi
-
-    - name: Cache OpenWrt dl directory
-      uses: actions/cache@v4
-      with:
-        path: openwrt/dl
-        key: dl-cache-${{ env.REPO_BRANCH }}-${{ github.run_number }}
-        restore-keys: |
-          dl-cache-${{ env.REPO_BRANCH }}-
 
     - name: Download the installation package
       id: package
@@ -222,10 +209,7 @@ jobs:
         fi
         cd openwrt
         echo -e "$(nproc) thread compile"
-        export USE_CCACHE=1
-        export CCACHE_DIR=$HOME/.ccache
         make -j$(nproc) || make -j1 || make -j1 V=s
-        ccache -s
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Save kernel cache
@@ -247,7 +231,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload the firmware to github
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: ${{ env.date1 }}_${{ env.OPENWRT_NAME }}_${{ env.OPENWRT_NAME1 }}${{ env.device_suffix }}
@@ -277,7 +261,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Publish to release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v1
       if: steps.tag.outputs.status == 'success' && !cancelled()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
