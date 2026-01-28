@@ -218,21 +218,18 @@ jobs:
         # Get selected device from dropdown
         SELECTED_DEVICE="${{ github.event.inputs.device }}"
         
+        touch release.txt
+        echo "📥 固件下载" >> release.txt
+        
         if [ "$SELECTED_DEVICE" != "all" ]; then
           # Convert underscores to hyphens for device name
           DEVICE_NAME=$(echo "$SELECTED_DEVICE" | sed 's/_/-/g')
           echo "release_tag=${{ env.date1 }}_${DEVICE_NAME}" >> $GITHUB_OUTPUT
           echo "release_name=${{ env.date2 }} - ${DEVICE_NAME}" >> $GITHUB_OUTPUT
-          
-          touch release.txt
-          echo "📥 固件下载" >> release.txt
           echo "🎯 目标设备: ${DEVICE_NAME}" >> release.txt
         else
           echo "release_tag=${{ env.date1 }}" >> $GITHUB_OUTPUT
           echo "release_name=${{ env.date2 }}" >> $GITHUB_OUTPUT
-          
-          touch release.txt
-          echo "📥 固件下载" >> release.txt
           echo "🎯 目标设备: 全部设备 (Multi-Profile)" >> release.txt
         fi
         echo "status=success" >> $GITHUB_OUTPUT
