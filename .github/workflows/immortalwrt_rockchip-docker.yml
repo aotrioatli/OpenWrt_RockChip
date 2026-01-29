@@ -195,8 +195,7 @@ jobs:
       uses: actions/cache/restore@v4
       with:
         path: |
-          openwrt/build_dir/target-*
-          openwrt/staging_dir/target-*
+          openwrt/build_dir/target-*/linux-*
         key: kernel-cache-${{ env.REPO_BRANCH }}-${{ github.event.inputs.device }}-${{ hashFiles('openwrt/.config') }}
         restore-keys: |
           kernel-cache-${{ env.REPO_BRANCH }}-${{ github.event.inputs.device }}-
@@ -228,8 +227,7 @@ jobs:
       uses: actions/cache/save@v4
       with:
         path: |
-          openwrt/build_dir/target-*
-          openwrt/staging_dir/target-*
+          openwrt/build_dir/target-*/linux-*
         key: kernel-cache-${{ env.REPO_BRANCH }}-${{ github.event.inputs.device }}-${{ hashFiles('openwrt/.config') }}
 
     - name: Organize and Rename Files
